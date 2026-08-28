@@ -2,7 +2,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// 1. MDXファイルを通常通り取得（URLやfrontmatter用）
 const rawPosts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: true }));
 
 const posts = rawPosts.map((post: any) => {
@@ -11,9 +10,7 @@ const posts = rawPosts.map((post: any) => {
   if (!previewText && post.file) {
     try {
       const fileContent = fs.readFileSync(post.file, 'utf-8');
-
       const bodyOnly = fileContent.replace(/^---[\s\S]*?---/, '').trim();
-
       const firstLine = bodyOnly
         .split('\n')
         .map((line: string) => line.trim())
@@ -39,16 +36,22 @@ const posts = rawPosts.map((post: any) => {
     frontmatter: {
       ...post.frontmatter,
       description: previewText || '本文なし',
+      tags: post.frontmatter?.tags || [], // タグがない場合は空配列
     },
   };
 }).sort((a: any, b: any) => {
-  // 日付文字列を取得（未設定の場合は古い日付として扱う）
   const dateA = new Date(a.frontmatter?.date || '1970-01-01').getTime();
   const dateB = new Date(b.frontmatter?.date || '1970-01-01').getTime();
-
-  // 降順（新しい順）に並び替え
-  return dateB - dateA;
+  if (dateA !== dateB) {
+    return dateB - dateA;
+  }
+  const titleA = a.frontmatter?.title || '';
+  const titleB = b.frontmatter?.title || '';
+  return titleA.localeCompare(titleB, 'ja');
 });
+
+// 記事についているすべてのタグを重複なしで取得
+const allTags = [...new Set(posts.flatMap((post: any) => post.frontmatter.tags))];
 ---
 
 <!-- HTMLエリアは基本更新しない。 -->
@@ -84,14 +87,42 @@ const posts = rawPosts.map((post: any) => {
             </div>
             <div class="article">
                 <h2 class="section-tt">Articles</h2>
+                {allTags.length > 0 && (
+        <div class="tag-container">
+            <button class="tag-btn active" data-tag="all">すべて</button>
+            {allTags.map((tag) => (
+                <button class="tag-btn" data-tag={tag}>#{tag}</button>
+            ))}
+        </div>
+    )}
                     <div class="post-grid">
-                        {posts.map((post: any) => (
-                            <a href={post.url} class="post-card">
-                                <h3 class="post-title">{post.frontmatter?.title || '記事タイトル'}</h3>
-                                    <p class="post-description">{post.frontmatter?.description || '記事のプレビュー'}</p>
-                                        <span class="post-date">{post.frontmatter?.date || '20xx-xx-xx'}</span>
-                            </a>
-  ))}
+    {posts.map((post: any) => {
+        const rawTags = post.frontmatter?.tags;
+        const tagList = Array.isArray(rawTags) 
+            ? rawTags 
+            : typeof rawTags === 'string' ? [rawTags] : [];
+        const tagString = tagList.join(',');
+
+        return (
+            <a 
+                href={post.url} 
+                class="post-card" 
+                data-tags={tagString}
+            >
+                <h3 class="post-title">{post.frontmatter?.title || '記事タイトル'}</h3>
+                <p class="post-description">{post.frontmatter?.description || '記事のプレビュー'}</p>
+                <span class="post-date">{post.frontmatter?.date || '20xx-xx-xx'}</span>
+                
+                {tagList.length > 0 && (
+                    <div class="card-tags">
+                        {tagList.map((t: string) => (
+                            <span class="card-tag">#{t}</span>
+                        ))}
+                    </div>
+                )}
+            </a>
+        );
+    })}
 </div>
             </div>
         </div>
@@ -113,18 +144,41 @@ const posts = rawPosts.map((post: any) => {
 
 <!-- ハンバーガーメニューの部分 -->
 <script is:inline>
-      document.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('hamburger-btn');
-        const menu = document.querySelector('.site-menu');
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('hamburger-btn');
+    const menu = document.querySelector('.site-menu');
 
-        if (btn && menu) {
-          btn.addEventListener('click', () => {
-            btn.classList.toggle('active');
-            menu.classList.toggle('active');
-          });
-        }
+    if (btn && menu) {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        menu.classList.toggle('active');
       });
-    </script>
+    }
+
+    const tagButtons = document.querySelectorAll('.tag-btn');
+    const postCards = document.querySelectorAll('.post-card');
+
+    tagButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const selectedTag = button.getAttribute('data-tag');
+
+        tagButtons.forEach((btn) => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        postCards.forEach((card) => {
+          const rawTagsAttr = card.getAttribute('data-tags') || '';
+          const cardTags = rawTagsAttr ? rawTagsAttr.split(',') : [];
+
+          if (selectedTag === 'all' || cardTags.includes(selectedTag)) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+  });
+</script>
 
 <!-- 以下CSSエリア。こちらも同様に更新しない -->
 <style>
@@ -215,6 +269,48 @@ const posts = rawPosts.map((post: any) => {
         text-align: center;
         padding: 6px 8px;
     }
+
+    .tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tag-btn {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tag-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.tag-btn.active {
+    background-color: #333;
+    color: #fff;
+    border-color: #333;
+}
+
+.card-tags {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.card-tag {
+    font-size: 0.75rem;
+    color: #666;
+    background-color: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
 
     a {
         color: #000;
