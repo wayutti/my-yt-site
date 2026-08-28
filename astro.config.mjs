@@ -1,8 +1,12 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
+import remarkBreaks from 'remark-breaks';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://kogasaoshi.com', // ←ここをご自身の独自ドメイン（URL）に変更
-  integrations: [mdx()]
+  site: 'https://kogasaoshi.com',
+  integrations: [mdx()],
+  markdown: {
+    remarkPlugins: [remarkBreaks],
+  },
 });

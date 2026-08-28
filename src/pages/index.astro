@@ -41,6 +41,13 @@ const posts = rawPosts.map((post: any) => {
       description: previewText || '本文なし',
     },
   };
+}).sort((a: any, b: any) => {
+  // 日付文字列を取得（未設定の場合は古い日付として扱う）
+  const dateA = new Date(a.frontmatter?.date || '1970-01-01').getTime();
+  const dateB = new Date(b.frontmatter?.date || '1970-01-01').getTime();
+
+  // 降順（新しい順）に並び替え
+  return dateB - dateA;
 });
 ---
 
@@ -82,7 +89,7 @@ const posts = rawPosts.map((post: any) => {
                             <a href={post.url} class="post-card">
                                 <h3 class="post-title">{post.frontmatter?.title || '記事タイトル'}</h3>
                                     <p class="post-description">{post.frontmatter?.description || '記事のプレビュー'}</p>
-                                        <span class="post-date">{post.frontmatter?.pubDate || '20xx-xx-xx'}</span>
+                                        <span class="post-date">{post.frontmatter?.date || '20xx-xx-xx'}</span>
                             </a>
   ))}
 </div>
@@ -93,6 +100,7 @@ const posts = rawPosts.map((post: any) => {
                 <h2 class="menu-t">サイトメニュー</h2>
                 <ul class="menu-list">
                     <li><a href="/">トップページ</a></li>
+                    <li><a href="/profile/wayutyan">管理人プロフィール</a></li>
                 </ul>
             </div>
         </div>
