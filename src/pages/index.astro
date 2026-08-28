@@ -1,6 +1,7 @@
 ---
 import fs from 'node:fs';
 import path from 'node:path';
+import Sidebar from '../layouts/sidebar.astro';
 
 const rawPosts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: true }));
 
@@ -126,16 +127,7 @@ const allTags = [...new Set(posts.flatMap((post: any) => post.frontmatter.tags))
 </div>
             </div>
         </div>
-        <div class="side-bar">
-            <div class="site-menu">
-                <h2 class="menu-t">サイトメニュー</h2>
-                <ul class="menu-list">
-                    <li><a href="/">トップページ</a></li>
-                    <li><a href="/profile/wayutyan">管理人プロフィール</a></li>
-                    <li><a href="/other/link">リンク集</a></li>
-                </ul>
-            </div>
-        </div>
+        <Sidebar />
     </div>
     <div class="footer">
         <p>Copyright (C) 2026 kogasa-h9m All rights reserved.</p>
