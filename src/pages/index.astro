@@ -1,7 +1,48 @@
 ---
-const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: true }));
----
+import fs from 'node:fs';
+import path from 'node:path';
 
+// 1. MDXファイルを通常通り取得（URLやfrontmatter用）
+const rawPosts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: true }));
+
+const posts = rawPosts.map((post: any) => {
+  let previewText = post.frontmatter?.description;
+
+  if (!previewText && post.file) {
+    try {
+      const fileContent = fs.readFileSync(post.file, 'utf-8');
+
+      const bodyOnly = fileContent.replace(/^---[\s\S]*?---/, '').trim();
+
+      const firstLine = bodyOnly
+        .split('\n')
+        .map((line: string) => line.trim())
+        .find(
+          (line: string) =>
+            line.length > 0 &&
+            !line.startsWith('#') &&
+            !line.startsWith('import') &&
+            !line.startsWith('export') &&
+            !line.startsWith('<')
+        );
+
+      if (firstLine) {
+        previewText = firstLine;
+      }
+    } catch (e) {
+      console.error('ファイル読み込みエラー:', e);
+    }
+  }
+
+  return {
+    ...post,
+    frontmatter: {
+      ...post.frontmatter,
+      description: previewText || '本文なし',
+    },
+  };
+});
+---
 
 <!-- HTMLエリアは基本更新しない。 -->
 <!doctype html>
@@ -18,6 +59,11 @@ const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: tr
                 <a href="/" class="header-tt">小傘推しによるホームページ</a>
             </p>
         </div>
+        <button id="hamburger-btn" class="hamburger-btn" aria-label="メニューを開く">
+    <span class="bar"></span>
+    <span class="bar"></span>
+    <span class="bar"></span>
+  </button>
     </div>
     <div class="oya">
         <div class="content">
@@ -57,13 +103,30 @@ const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: tr
 </body>
 </html>
 
+<!-- ハンバーガーメニューの部分 -->
+<script is:inline>
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('hamburger-btn');
+        const menu = document.querySelector('.site-menu');
+
+        if (btn && menu) {
+          btn.addEventListener('click', () => {
+            btn.classList.toggle('active');
+            menu.classList.toggle('active');
+          });
+        }
+      });
+    </script>
+
 <!-- 以下CSSエリア。こちらも同様に更新しない -->
 <style>
     .header {
-        padding: 0% 28px;
+        padding: 16px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    
     .header-tt {
         font-size: 24px;
         text-decoration: none !important;
@@ -73,7 +136,6 @@ const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: tr
     .header-tt a:hover {
         text-decoration: none !important;
     }
-
 
     body {
         margin: 0%;
@@ -167,7 +229,7 @@ const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: tr
 
     .post-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
         gap: 20px;
         margin-top: 20px;
     }
@@ -175,6 +237,7 @@ const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: tr
     .post-card {
         display: block;
         padding: 20px;
+        max-width: 210px;
         background-color: #ffffff;
         border-radius: 10px;
         border: 1px solid #e5e5e5;
@@ -206,23 +269,75 @@ const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: tr
         color: #999;
     }
 
+    .hamburger-btn {
+        display: none;
+    }
+
     @media (max-width: 768px) {
-        .layout-container {
+        .oya {
             flex-direction: column;
             padding: 0 15px;
             margin: 15px auto;
         }
 
-        .main-content-card, .sidebar-card {
+        .content, .side-bar {
             width: 100%;
+            margin: 0;
         }
 
-        .main-content-card {
+        .content {
             padding: 20px;
         }
 
-        .sidebar-card {
-            margin-top: 20px;
+        .side-bar {
+            order: -1;
+            width: 100%;
+            margin: 0 0 15px 0;
+        }
+
+        .hamburger-btn {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 30px;
+            height: 21px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .hamburger-btn .bar {
+            width: 100%;
+            height: 3px;
+            background-color: #333;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-btn.active .bar:nth-child(1) {
+            transform: translateY(9px) rotate(45deg);
+        }
+
+        .hamburger-btn.active .bar:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger-btn.active .bar:nth-child(3) {
+            transform: translateY(-9px) rotate(-45deg);
+        }
+
+        .site-menu {
+            display: none;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-sizing: border-box;
+        }
+
+        .site-menu.active {
+            display: block !important;
         }
     }
 </style>
