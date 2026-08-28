@@ -1,11 +1,65 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const posts = Object.values(import.meta.glob('../pages/posts/*.mdx', { eager: true }));
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+
+<!-- HTMLエリアは基本更新しない。 -->>
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小傘推しによるホームページ</title>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <p class="header-tt">１ページ目</p>
+            </div>
+            </div>
+    <div class="oya">
+        <div class="content">
+            <div class="intro">
+                <h2 class="section-tt">自己紹介的な</h2>
+                    <p>
+                        気まぐれで更新している、kogasa-h9mのサイトです。<br>
+                        雑記やらなんやらおいてます
+                    </p>
+            </div>
+            <div class="article">
+                <h2 class="section-tt">Articles</h2>
+                    <ul class="post-list">
+                        {posts.map((post: any) => (
+                        <li class="post-item">
+                            <a href={post.url} class="post-link">
+                            {post.frontmatter?.title || '無題の記事'}
+                            </a>
+                        </li>
+                        ))}
+                    </ul>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <p>Copyright (C) 2026 kogasa-h9m All rights reserved.</p>
+    </div>
+</body>
+</html>
+
+<style>
+    .header {
+        background-color: #a2fff1;
+    }
+
+    .header-tt {
+        font-size: 24px;
+    }
+
+    body {
+        margin: 0%;
+    }
+
+    .content {
+        margin: 16px;
+    }
+</style>
