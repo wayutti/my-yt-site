@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像ファイルからQRコード読み取り</title>
+    <!-- jsQRライブラリの読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        .result-box {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>QRコード画像読み取り</h2>
+    <p>QRコードが含まれる画像ファイル（PNG、JPGなど）を選択してください。</p>
+    
+    <input type="file" id="qr-input" accept="image/*">
+
+    <div class="result-box">
+        <strong>読み取り結果：</strong>
+        <p id="result">画像を選択してください。</p>
+    </div>
+
+    <!-- 画像を処理するための隠しCanvas -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const fileInput = document.getElementById('qr-input');
+        const resultElement = document.getElementById('result');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Canvasのサイズを画像に合わせる
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // Canvasに画像を描画
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    
+                    // 画像のピクセルデータを取得
+                    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                    
+                    // jsQRで解析を実行
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (code) {
+                        resultElement.textContent = code.data;
+                    } else {
+                        resultElement.textContent = "QRコードを検出できませんでした。別の画像で試してください。";
+                    }
+                };
+
+                img.src = event.target.result;
+            };
+
+            reader.readAsDataURL(file);
+        });
+    </script>
+
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"d43b0a1b8e5e41aab286f184956d6453","r":1}' crossorigin="anonymous"></script>
+</body>
+</html>
